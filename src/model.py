@@ -26,22 +26,34 @@ def preprocessImage(image):
 	image = image[letterBoxTop:letterBoxBottom, 0:image.shape[1]]
 
 	image = image.astype(np.float32)
-	#Normalize image
-	image = image/255.0 - 0.5
 
 	return image
 
 
 #load the training data
 print("loading training data")
-with open('driving_log.csv', newline='') as file:
+
+pathToData = '../../storage/data/'
+logFileName = 'driving_log.csv'
+
+with open(pathToData + logFileName, newline='') as file:
 	fileReader = csv.reader(file)
 	for row in fileReader:
-		centerImages.append(preprocessImage(mpimg.imread(row[0].strip())))
-		leftImages.append(mpimg.imread(row[1].strip())) 
-		rightImages.append(mpimg.imread(row[2].strip()))
-		steeringAngle.append(float(row[6].strip()))
-		#print(row)
+		if len(row[0].strip()) > 6:
+			centerImages.append(preprocessImage(mpimg.imread(pathToData + row[0].strip())))
+			leftImages.append(mpimg.imread(pathToData + row[1].strip())) 
+			rightImages.append(mpimg.imread(pathToData + row[2].strip()))
+			steeringAngle.append(float(row[6].strip()))
+			#print(row)
+
+
+centerImages = np.array(centerImages)
+leftImages = np.array(leftImages)
+rightImages = np.array(rightImages)
+col3 = np.array(col3)
+col4 = np.array(col4)
+col5 = np.array(col5)
+steeringAngle = np.array(steeringAngle)
 print("training data loaded")
 
 
@@ -55,9 +67,9 @@ X_train, y_train = shuffle(X_train, y_train)
 print("shape")
 print(centerImages[0].shape[0])
 print(centerImages[0].shape[1])
+print("Samples loaded:")
+print(len(centerImages))
 
-plt.imshow(centerImages[1])
-plt.show()
 print("preprocessing done")
 
 #build up the layers
@@ -81,7 +93,16 @@ model.add(Dropout(.5))
 model.add(ELU())
 model.add(Dense(1))
 
-model.compile(optimizer="adam", loss="mse")
+
 
 
 #compile and train model
+
+model.compile(optimizer="adam", loss="mse")
+history = model.fit(X_train, y_train, nb_epoch=10, validation_split=0.2)
+
+#save the model
+
+model.save_weights('model.h5')  
+with open('model.json', 'w') as outfile:
+    outfile.write(model.to_json())
